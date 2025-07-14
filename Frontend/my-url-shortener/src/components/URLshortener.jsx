@@ -1,73 +1,46 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import logger from '../utils/logger.js';
 
 function URLShortener({ shortenedUrls, setShortenedUrls }) {
   const [urls, setUrls] = useState([{ id: 1, url: '', code: '', validity: 30 }]);
   const [message, setMessage] = useState('');
 
-  useEffect(() => {
-    logger.info('frontend', 'component', 'URLShortener component initialized');
-  }, []);
-
   const generateCode = () => Math.random().toString(36).substring(2, 8);
-  
-  const isValidUrl = (url) => {
-    try { 
-      new URL(url); 
-      logger.debug('frontend', 'utils', `URL validation passed: ${url}`);
-      return true; 
-    } catch { 
-      logger.warn('frontend', 'utils', `URL validation failed: ${url}`);
-      return false; 
-    }
-  };
+  const isValidUrl = (url) => { try { new URL(url); return true; } catch { return false; } };
 
   const addUrl = () => {
     if (urls.length < 5) {
       setUrls([...urls, { id: Date.now(), url: '', code: '', validity: 30 }]);
-      logger.info('frontend', 'component', `Added new URL field, total: ${urls.length + 1}`);
-    } else {
-      logger.warn('frontend', 'component', 'Maximum URL limit (5) reached');
     }
   };
 
   const removeUrl = (id) => {
-    if (urls.length > 1) {
-      setUrls(urls.filter(u => u.id !== id));
-      logger.info('frontend', 'component', `Removed URL field ${id}, remaining: ${urls.length - 1}`);
-    }
+    if (urls.length > 1) setUrls(urls.filter(u => u.id !== id));
   };
 
   const updateUrl = (id, field, value) => {
     setUrls(urls.map(u => u.id === id ? { ...u, [field]: value } : u));
-    logger.debug('frontend', 'component', `Updated URL field ${field} for ID ${id}`);
   };
 
-  const shortenUrls = async () => {
-    logger.info('frontend', 'api', 'Starting URL shortening process');
+  const shortenUrls = () => {
     setMessage('');
-    
     const validUrls = urls.filter(u => u.url.trim());
     
     if (validUrls.length === 0) {
-      logger.warn('frontend', 'component', 'No URLs provided for shortening');
-      setMessage('Please enter at least one URL to get started.');
+      setMessage('Please enter at least one URL');
       return;
     }
     
     if (validUrls.some(u => !isValidUrl(u.url))) {
-      logger.error('frontend', 'component', 'Invalid URLs detected in batch');
-      setMessage('Please make sure all URLs start with http:// or https://');
+      setMessage('Please enter valid URLs (include http:// or https://)');
       return;
     }
 
-    // Check for duplicate custom codes
     const customCodes = validUrls.filter(u => u.code).map(u => u.code);
-    const duplicateCodes = customCodes.filter((code, index) => customCodes.indexOf(code) !== index);
+    const duplicates = customCodes.filter((code, index) => customCodes.indexOf(code) !== index);
     
-    if (duplicateCodes.length > 0) {
-      logger.error('frontend', 'component', `Duplicate custom codes detected: ${duplicateCodes.join(', ')}`);
-      setMessage(`Duplicate custom codes: ${duplicateCodes.join(', ')}. Each code must be unique.`);
+    if (duplicates.length > 0) {
+      setMessage(`Duplicate codes: ${duplicates.join(', ')}`);
       return;
     }
 
@@ -75,18 +48,14 @@ function URLShortener({ shortenedUrls, setShortenedUrls }) {
       const newUrls = validUrls.map(u => {
         const shortCode = u.code || generateCode();
         
-        // Check if code already exists
-        const exists = shortenedUrls.some(existing => existing.shortCode === shortCode);
-        if (exists) {
-          throw new Error(`The code "${shortCode}" is already taken. Please try a different one.`);
+        if (shortenedUrls.some(existing => existing.shortCode === shortCode)) {
+          throw new Error(`Code "${shortCode}" already exists`);
         }
 
-        logger.info('frontend', 'api', `Generated short code: ${shortCode} for ${u.url}`);
-        
         return {
           id: Date.now() + Math.random(),
           originalUrl: u.url,
-          shortCode: shortCode,
+          shortCode,
           shortUrl: `http://localhost:3000/${shortCode}`,
           createdAt: new Date(),
           expiryDate: new Date(Date.now() + (u.validity || 30) * 60000),
@@ -96,14 +65,13 @@ function URLShortener({ shortenedUrls, setShortenedUrls }) {
       });
 
       setShortenedUrls(prev => [...prev, ...newUrls]);
-      setMessage(`Successfully created ${newUrls.length} short link${newUrls.length > 1 ? 's' : ''}!`);
+      setMessage(`Created ${newUrls.length} short link${newUrls.length > 1 ? 's' : ''}!`);
       setUrls([{ id: 1, url: '', code: '', validity: 30 }]);
-      
-      logger.info('frontend', 'api', `Successfully created ${newUrls.length} short URLs`);
+      logger.info('frontend', 'api', `Created ${newUrls.length} URLs`);
       
     } catch (error) {
-      logger.error('frontend', 'api', `URL shortening failed: ${error.message}`);
       setMessage(error.message);
+      logger.error('frontend', 'api', `URL creation failed: ${error.message}`);
     }
   };
 
@@ -111,56 +79,36 @@ function URLShortener({ shortenedUrls, setShortenedUrls }) {
     try {
       await navigator.clipboard.writeText(url);
       setMessage('Copied to clipboard!');
-      logger.info('frontend', 'component', `Copied URL to clipboard: ${url}`);
     } catch (error) {
-      logger.error('frontend', 'component', `Failed to copy to clipboard: ${error.message}`);
-      setMessage('Failed to copy to clipboard. Please copy manually.');
+      setMessage('Failed to copy');
     }
   };
 
   const testUrl = (shortCode) => {
-    logger.info('frontend', 'api', `Testing short URL: ${shortCode}`);
-    
     const urlData = shortenedUrls.find(u => u.shortCode === shortCode);
     if (!urlData) {
-      logger.error('frontend', 'api', `Short URL not found: ${shortCode}`);
-      setMessage('Short URL not found.');
+      setMessage('URL not found');
       return;
     }
     
     if (new Date() > urlData.expiryDate) {
-      logger.warn('frontend', 'api', `Attempted to access expired URL: ${shortCode}`);
-      setMessage('This link has expired.');
+      setMessage('URL expired');
       return;
     }
 
-    // Record click with geolocation simulation
-    const clickData = {
-      timestamp: new Date(),
-      source: 'Test Button',
-      location: 'Test Environment'
-    };
-
     setShortenedUrls(prev => prev.map(u => 
       u.shortCode === shortCode 
-        ? { 
-            ...u, 
-            clicks: u.clicks + 1, 
-            clickHistory: [...u.clickHistory, clickData]
-          }
+        ? { ...u, clicks: u.clicks + 1, clickHistory: [...u.clickHistory, { timestamp: new Date(), source: 'Test' }] }
         : u
     ));
     
-    logger.info('frontend', 'api', `Redirecting ${shortCode} to ${urlData.originalUrl}, total clicks: ${urlData.clicks + 1}`);
     window.open(urlData.originalUrl, '_blank');
   };
 
   return (
     <div className="container">
       <h2>Create Short Links</h2>
-      <p className="friendly-subtitle">
-        Enter your long URLs below and we'll create short, shareable links for you.
-      </p>
+      <p className="friendly-subtitle">Enter your long URLs below and we'll create short, shareable links for you.</p>
       
       {message && <div className="message">{message}</div>}
       
@@ -168,11 +116,7 @@ function URLShortener({ shortenedUrls, setShortenedUrls }) {
         <div key={url.id} className="url-form">
           <div className="form-header">
             <span>Link {i + 1}</span>
-            {urls.length > 1 && (
-              <button onClick={() => removeUrl(url.id)}>
-                Remove
-              </button>
-            )}
+            {urls.length > 1 && <button onClick={() => removeUrl(url.id)}>Remove</button>}
           </div>
           
           <input
@@ -200,14 +144,8 @@ function URLShortener({ shortenedUrls, setShortenedUrls }) {
       ))}
 
       <div className="buttons">
-        {urls.length < 5 && (
-          <button onClick={addUrl}>
-            Add Another Link ({urls.length}/5)
-          </button>
-        )}
-        <button className="primary" onClick={shortenUrls}>
-          Create Short Links
-        </button>
+        {urls.length < 5 && <button onClick={addUrl}>Add Another Link ({urls.length}/5)</button>}
+        <button className="primary" onClick={shortenUrls}>Create Short Links</button>
       </div>
 
       {shortenedUrls.slice(-3).map(url => (
@@ -215,12 +153,8 @@ function URLShortener({ shortenedUrls, setShortenedUrls }) {
           <div className="result-url">{url.shortUrl}</div>
           <div className="result-original">Original: {url.originalUrl}</div>
           <div className="result-actions">
-            <button onClick={() => copyUrl(url.shortUrl)}>
-              Copy
-            </button>
-            <button onClick={() => testUrl(url.shortCode)}>
-              Test
-            </button>
+            <button onClick={() => copyUrl(url.shortUrl)}>Copy</button>
+            <button onClick={() => testUrl(url.shortCode)}>Test</button>
             <span>{url.clicks} clicks</span>
           </div>
         </div>
