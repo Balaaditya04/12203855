@@ -1,34 +1,112 @@
-import React, { useState } from 'react';
-import URLShortener from './components/URLshortener';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import URLShortener from './components/URLshortener.jsx';
 import Statistics from './components/Statistics';
+import Redirect from './components/Redirect';
+import logger from './utils/logger.js';
 import './App.css';
 
-export const log = (stack, level, pkg, message) => {
-  console.log(`[${level.toUpperCase()}] ${stack}/${pkg}: ${message}`);
-};
-
-function App() {
+// Main app content component
+function AppContent() {
   const [activeTab, setActiveTab] = useState('shorten');
   const [shortenedUrls, setShortenedUrls] = useState([]);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Load URLs from localStorage on app start
+  useEffect(() => {
+    // Initialize the application
+    logger.info('frontend', 'config', 'URL Shortener application started successfully');
+    logger.debug('frontend', 'config', 'Application running on http://localhost:3000');
+    
+    // Load saved URLs from localStorage
+    try {
+      const savedUrls = localStorage.getItem('shortenedUrls');
+      if (savedUrls) {
+        const parsedUrls = JSON.parse(savedUrls);
+        // Convert date strings back to Date objects
+        const urlsWithDates = parsedUrls.map(url => ({
+          ...url,
+          createdAt: new Date(url.createdAt),
+          expiryDate: new Date(url.expiryDate),
+          clickHistory: url.clickHistory.map(click => ({
+            ...click,
+            timestamp: new Date(click.timestamp)
+          }))
+        }));
+        setShortenedUrls(urlsWithDates);
+        logger.info('frontend', 'config', `Loaded ${urlsWithDates.length} URLs from localStorage`);
+      }
+    } catch (error) {
+      logger.error('frontend', 'config', `Failed to load URLs from localStorage: ${error.message}`);
+    }
+    
+    // Set authentication token if available (from registration process)
+    const token = import.meta.env.VITE_AUTH_TOKEN || null;
+    if (token) {
+      logger.setToken(token);
+      logger.info('frontend', 'auth', 'Authentication token configured');
+    } else {
+      logger.warn('frontend', 'auth', 'No authentication token found - logs will be sent without authentication');
+    }
+  }, []);
+
+  // Save URLs to localStorage whenever they change
+  useEffect(() => {
+    if (shortenedUrls.length > 0) {
+      try {
+        localStorage.setItem('shortenedUrls', JSON.stringify(shortenedUrls));
+        logger.debug('frontend', 'utils', `Saved ${shortenedUrls.length} URLs to localStorage`);
+      } catch (error) {
+        logger.error('frontend', 'utils', `Failed to save URLs to localStorage: ${error.message}`);
+      }
+    }
+  }, [shortenedUrls]);
+
+  const handleTabChange = (tab) => {
+    logger.info('frontend', 'utils', `User switched to ${tab} tab`);
+    setActiveTab(tab);
+    navigate('/');
+  };
+
+  // Check if we're on a short URL path
+  const isShortUrl = location.pathname !== '/' && location.pathname.length > 1;
+
+  if (isShortUrl) {
+    return (
+      <Routes>
+        <Route 
+          path="/:shortCode" 
+          element={
+            <Redirect 
+              shortenedUrls={shortenedUrls}
+              setShortenedUrls={setShortenedUrls}
+            />
+          } 
+        />
+      </Routes>
+    );
+  }
 
   return (
     <div className="app">
       <header className="header">
-        <h1>🔗 URL Shortener</h1>
+        <h1>QuickLink</h1>
+        <p className="header-subtitle">Simple URL shortener for your long links</p>
       </header>
 
       <nav className="nav">
         <button 
           className={activeTab === 'shorten' ? 'active' : ''}
-          onClick={() => setActiveTab('shorten')}
+          onClick={() => handleTabChange('shorten')}
         >
-          Shorten URLs
+          Create Links
         </button>
         <button 
           className={activeTab === 'stats' ? 'active' : ''}
-          onClick={() => setActiveTab('stats')}
+          onClick={() => handleTabChange('stats')}
         >
-          Statistics
+          View Links
         </button>
       </nav>
 
@@ -46,6 +124,15 @@ function App() {
         )}
       </main>
     </div>
+  );
+}
+
+// Main App component with Router
+function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
   );
 }
 
