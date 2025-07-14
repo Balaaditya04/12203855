@@ -16,7 +16,7 @@ function AppContent() {
   // Load URLs from localStorage on app start
   useEffect(() => {
     // Initialize the application
-    logger.info('frontend', 'config', 'URL Shortener application started successfully');
+    logger.info('frontend', 'page', 'URL Shortener application started successfully');
     logger.debug('frontend', 'config', 'Application running on http://localhost:3000');
     
     // Load saved URLs from localStorage
@@ -35,10 +35,10 @@ function AppContent() {
           }))
         }));
         setShortenedUrls(urlsWithDates);
-        logger.info('frontend', 'config', `Loaded ${urlsWithDates.length} URLs from localStorage`);
+        logger.info('frontend', 'state', `Loaded ${urlsWithDates.length} URLs from localStorage`);
       }
     } catch (error) {
-      logger.error('frontend', 'config', `Failed to load URLs from localStorage: ${error.message}`);
+      logger.error('frontend', 'state', `Failed to load URLs from localStorage: ${error.message}`);
     }
     
     // Set authentication token if available (from registration process)
@@ -56,15 +56,15 @@ function AppContent() {
     if (shortenedUrls.length > 0) {
       try {
         localStorage.setItem('shortenedUrls', JSON.stringify(shortenedUrls));
-        logger.debug('frontend', 'utils', `Saved ${shortenedUrls.length} URLs to localStorage`);
+        logger.debug('frontend', 'state', `Saved ${shortenedUrls.length} URLs to localStorage`);
       } catch (error) {
-        logger.error('frontend', 'utils', `Failed to save URLs to localStorage: ${error.message}`);
+        logger.error('frontend', 'state', `Failed to save URLs to localStorage: ${error.message}`);
       }
     }
   }, [shortenedUrls]);
 
   const handleTabChange = (tab) => {
-    logger.info('frontend', 'utils', `User switched to ${tab} tab`);
+    logger.info('frontend', 'component', `User switched to ${tab} tab`);
     setActiveTab(tab);
     navigate('/');
   };

@@ -6,7 +6,7 @@ function URLShortener({ shortenedUrls, setShortenedUrls }) {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    logger.info('frontend', 'config', 'URLShortener component initialized');
+    logger.info('frontend', 'component', 'URLShortener component initialized');
   }, []);
 
   const generateCode = () => Math.random().toString(36).substring(2, 8);
@@ -25,38 +25,38 @@ function URLShortener({ shortenedUrls, setShortenedUrls }) {
   const addUrl = () => {
     if (urls.length < 5) {
       setUrls([...urls, { id: Date.now(), url: '', code: '', validity: 30 }]);
-      logger.info('frontend', 'utils', `Added new URL field, total: ${urls.length + 1}`);
+      logger.info('frontend', 'component', `Added new URL field, total: ${urls.length + 1}`);
     } else {
-      logger.warn('frontend', 'utils', 'Maximum URL limit (5) reached');
+      logger.warn('frontend', 'component', 'Maximum URL limit (5) reached');
     }
   };
 
   const removeUrl = (id) => {
     if (urls.length > 1) {
       setUrls(urls.filter(u => u.id !== id));
-      logger.info('frontend', 'utils', `Removed URL field ${id}, remaining: ${urls.length - 1}`);
+      logger.info('frontend', 'component', `Removed URL field ${id}, remaining: ${urls.length - 1}`);
     }
   };
 
   const updateUrl = (id, field, value) => {
     setUrls(urls.map(u => u.id === id ? { ...u, [field]: value } : u));
-    logger.debug('frontend', 'utils', `Updated URL field ${field} for ID ${id}`);
+    logger.debug('frontend', 'component', `Updated URL field ${field} for ID ${id}`);
   };
 
   const shortenUrls = async () => {
-    logger.info('frontend', 'middleware', 'Starting URL shortening process');
+    logger.info('frontend', 'api', 'Starting URL shortening process');
     setMessage('');
     
     const validUrls = urls.filter(u => u.url.trim());
     
     if (validUrls.length === 0) {
-      logger.warn('frontend', 'middleware', 'No URLs provided for shortening');
+      logger.warn('frontend', 'component', 'No URLs provided for shortening');
       setMessage('Please enter at least one URL to get started.');
       return;
     }
     
     if (validUrls.some(u => !isValidUrl(u.url))) {
-      logger.error('frontend', 'middleware', 'Invalid URLs detected in batch');
+      logger.error('frontend', 'component', 'Invalid URLs detected in batch');
       setMessage('Please make sure all URLs start with http:// or https://');
       return;
     }
@@ -66,7 +66,7 @@ function URLShortener({ shortenedUrls, setShortenedUrls }) {
     const duplicateCodes = customCodes.filter((code, index) => customCodes.indexOf(code) !== index);
     
     if (duplicateCodes.length > 0) {
-      logger.error('frontend', 'middleware', `Duplicate custom codes detected: ${duplicateCodes.join(', ')}`);
+      logger.error('frontend', 'component', `Duplicate custom codes detected: ${duplicateCodes.join(', ')}`);
       setMessage(`Duplicate custom codes: ${duplicateCodes.join(', ')}. Each code must be unique.`);
       return;
     }
@@ -81,7 +81,7 @@ function URLShortener({ shortenedUrls, setShortenedUrls }) {
           throw new Error(`The code "${shortCode}" is already taken. Please try a different one.`);
         }
 
-        logger.info('frontend', 'middleware', `Generated short code: ${shortCode} for ${u.url}`);
+        logger.info('frontend', 'api', `Generated short code: ${shortCode} for ${u.url}`);
         
         return {
           id: Date.now() + Math.random(),
@@ -99,10 +99,10 @@ function URLShortener({ shortenedUrls, setShortenedUrls }) {
       setMessage(`Successfully created ${newUrls.length} short link${newUrls.length > 1 ? 's' : ''}!`);
       setUrls([{ id: 1, url: '', code: '', validity: 30 }]);
       
-      logger.info('frontend', 'middleware', `Successfully created ${newUrls.length} short URLs`);
+      logger.info('frontend', 'api', `Successfully created ${newUrls.length} short URLs`);
       
     } catch (error) {
-      logger.error('frontend', 'middleware', `URL shortening failed: ${error.message}`);
+      logger.error('frontend', 'api', `URL shortening failed: ${error.message}`);
       setMessage(error.message);
     }
   };
@@ -111,25 +111,25 @@ function URLShortener({ shortenedUrls, setShortenedUrls }) {
     try {
       await navigator.clipboard.writeText(url);
       setMessage('Copied to clipboard!');
-      logger.info('frontend', 'utils', `Copied URL to clipboard: ${url}`);
+      logger.info('frontend', 'component', `Copied URL to clipboard: ${url}`);
     } catch (error) {
-      logger.error('frontend', 'utils', `Failed to copy to clipboard: ${error.message}`);
+      logger.error('frontend', 'component', `Failed to copy to clipboard: ${error.message}`);
       setMessage('Failed to copy to clipboard. Please copy manually.');
     }
   };
 
   const testUrl = (shortCode) => {
-    logger.info('frontend', 'middleware', `Testing short URL: ${shortCode}`);
+    logger.info('frontend', 'api', `Testing short URL: ${shortCode}`);
     
     const urlData = shortenedUrls.find(u => u.shortCode === shortCode);
     if (!urlData) {
-      logger.error('frontend', 'middleware', `Short URL not found: ${shortCode}`);
+      logger.error('frontend', 'api', `Short URL not found: ${shortCode}`);
       setMessage('Short URL not found.');
       return;
     }
     
     if (new Date() > urlData.expiryDate) {
-      logger.warn('frontend', 'middleware', `Attempted to access expired URL: ${shortCode}`);
+      logger.warn('frontend', 'api', `Attempted to access expired URL: ${shortCode}`);
       setMessage('This link has expired.');
       return;
     }
@@ -151,7 +151,7 @@ function URLShortener({ shortenedUrls, setShortenedUrls }) {
         : u
     ));
     
-    logger.info('frontend', 'middleware', `Redirecting ${shortCode} to ${urlData.originalUrl}, total clicks: ${urlData.clicks + 1}`);
+    logger.info('frontend', 'api', `Redirecting ${shortCode} to ${urlData.originalUrl}, total clicks: ${urlData.clicks + 1}`);
     window.open(urlData.originalUrl, '_blank');
   };
 

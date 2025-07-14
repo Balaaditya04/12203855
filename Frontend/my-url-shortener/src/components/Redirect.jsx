@@ -8,22 +8,22 @@ function Redirect({ shortenedUrls, setShortenedUrls }) {
   const [message, setMessage] = useState('Redirecting...');
 
   useEffect(() => {
-    logger.info('frontend', 'middleware', `Accessing short URL: ${shortCode}`);
-    logger.debug('frontend', 'middleware', `Available URLs count: ${shortenedUrls.length}`);
+    logger.info('frontend', 'page', `Accessing short URL: ${shortCode}`);
+    logger.debug('frontend', 'page', `Available URLs count: ${shortenedUrls.length}`);
     
     const handleRedirect = () => {
       const urlData = shortenedUrls.find(url => url.shortCode === shortCode);
       
       if (!urlData) {
-        logger.error('frontend', 'middleware', `Short URL not found: ${shortCode}`);
-        logger.debug('frontend', 'middleware', `Available short codes: ${shortenedUrls.map(u => u.shortCode).join(', ')}`);
+        logger.error('frontend', 'page', `Short URL not found: ${shortCode}`);
+        logger.debug('frontend', 'page', `Available short codes: ${shortenedUrls.map(u => u.shortCode).join(', ')}`);
         setStatus('error');
         setMessage('❌ Short URL not found');
         return;
       }
 
       if (new Date() > urlData.expiryDate) {
-        logger.warn('frontend', 'middleware', `Attempted to access expired URL: ${shortCode}`);
+        logger.warn('frontend', 'page', `Attempted to access expired URL: ${shortCode}`);
         setStatus('expired');
         setMessage('⏰ This short URL has expired');
         return;
@@ -46,7 +46,7 @@ function Redirect({ shortenedUrls, setShortenedUrls }) {
           : url
       ));
 
-      logger.info('frontend', 'middleware', `Redirecting ${shortCode} to ${urlData.originalUrl}, clicks: ${urlData.clicks + 1}`);
+      logger.info('frontend', 'api', `Redirecting ${shortCode} to ${urlData.originalUrl}, clicks: ${urlData.clicks + 1}`);
       
       setStatus('redirecting');
       setMessage('🚀 Redirecting now...');

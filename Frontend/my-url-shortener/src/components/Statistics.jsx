@@ -3,8 +3,8 @@ import logger from '../utils/logger.js';
 
 function Statistics({ shortenedUrls, setShortenedUrls }) {
   useEffect(() => {
-    logger.info('frontend', 'config', 'Statistics component initialized');
-    logger.debug('frontend', 'utils', `Displaying statistics for ${shortenedUrls.length} URLs`);
+    logger.info('frontend', 'component', 'Statistics component initialized');
+    logger.debug('frontend', 'component', `Displaying statistics for ${shortenedUrls.length} URLs`);
   }, [shortenedUrls.length]);
   
   const activeUrls = shortenedUrls.filter(u => new Date() < u.expiryDate);
@@ -14,27 +14,27 @@ function Statistics({ shortenedUrls, setShortenedUrls }) {
   const deleteUrl = (id) => {
     const urlToDelete = shortenedUrls.find(u => u.id === id);
     if (urlToDelete) {
-      logger.info('frontend', 'utils', `Deleting URL: ${urlToDelete.shortCode} (${urlToDelete.originalUrl})`);
+      logger.info('frontend', 'component', `Deleting URL: ${urlToDelete.shortCode} (${urlToDelete.originalUrl})`);
       setShortenedUrls(prev => prev.filter(u => u.id !== id));
-      logger.info('frontend', 'utils', `URL deleted successfully, remaining URLs: ${shortenedUrls.length - 1}`);
+      logger.info('frontend', 'component', `URL deleted successfully, remaining URLs: ${shortenedUrls.length - 1}`);
     } else {
-      logger.error('frontend', 'utils', `Failed to delete URL with ID: ${id} - URL not found`);
+      logger.error('frontend', 'component', `Failed to delete URL with ID: ${id} - URL not found`);
     }
   };
 
   const clearAllUrls = () => {
     setShortenedUrls([]);
     localStorage.removeItem('shortenedUrls');
-    logger.info('frontend', 'utils', 'All URLs cleared from storage');
+    logger.info('frontend', 'state', 'All URLs cleared from storage');
   };
 
   const handleUrlClick = (url) => {
-    logger.info('frontend', 'middleware', `User viewing details for URL: ${url.shortCode}`);
+    logger.info('frontend', 'component', `User viewing details for URL: ${url.shortCode}`);
     // This could be expanded to show a detailed modal
   };
 
   if (shortenedUrls.length === 0) {
-    logger.info('frontend', 'utils', 'No URLs to display in statistics');
+    logger.info('frontend', 'component', 'No URLs to display in statistics');
     return (
       <div className="container">
         <h2>Your Links</h2>
@@ -49,7 +49,7 @@ function Statistics({ shortenedUrls, setShortenedUrls }) {
   }
 
   // Log current statistics
-  logger.debug('frontend', 'utils', `Statistics summary - Total: ${shortenedUrls.length}, Active: ${activeUrls.length}, Expired: ${expiredUrls.length}, Total Clicks: ${totalClicks}`);
+  logger.debug('frontend', 'component', `Statistics summary - Total: ${shortenedUrls.length}, Active: ${activeUrls.length}, Expired: ${expiredUrls.length}, Total Clicks: ${totalClicks}`);
 
   return (
     <div className="container">
