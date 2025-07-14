@@ -85,7 +85,6 @@ src/
 │   └── Statistics.jsx       # Analytics component
 └── utils/
     ├── logger.js            # 🚀 Logging Middleware (Reusable Package)
-    └── logging-demo.js      # Demo usage examples
 ```
 
 ## Usage
